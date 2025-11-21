@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+
+# Virtual environment
+venv/
+
+# Docker
+*.log
+*.env
+
+# OS
+.DS_Store
+
+
+# Editor
+.vscode/
+
+# Uploads
+api/uploads/
+
+# C/C++ binaries
+*.exe
+*.out
+*.o
+*main
+
+
+# private atm
+
+
