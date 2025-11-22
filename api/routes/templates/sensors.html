@@ -208,20 +208,14 @@ let chart = new Chart(ctx, {
                     display: true,
                     text: "Temperature [°C]" 
                 }
-            },
-            x: {
-                title: {
-                    display: true,
-                    text: "Timestamp" 
-                }
             }
         }
     }
 });
 
 function updateChart(data) {
-    // Nur Temperatur-Werte
-    const tempData = data.filter(d => d[0].toLowerCase() === "temperatur");
+    // temp values only
+    const tempData = data.filter(d => d[0].toLowerCase() === "temperature");
     chart.data.labels = tempData.map(d => d[2]).reverse();
     chart.data.datasets[0].data = tempData.map(d => d[1]).reverse();
     chart.update();
