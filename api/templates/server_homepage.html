@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width,initial-scale=1">
+		<title>Raspberry Pi Server</title>
+		<link rel="stylesheet" href="{{ url_for('static', filename='css/homepage.css') }}">
+	</head>
+	<body class="layout">
+		<main class="card">
+			{% include '_server_homepage.html' %}
+
+
+			<footer class="footer">
+				<small>Server on Raspberry Pi — <em>Host: {{ request.host }}</em></small>
+				<div class="access-note"> 
+					Other devices on the same local network can access it using the Pi's IP: 
+        	<code>http://{{ pi_ip }}:5000</code>.
+      	</div>
+			</footer>
+		</main>
+	</body>
+</html>

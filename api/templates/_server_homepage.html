@@ -1,0 +1,64 @@
+<section class="hero">
+	<h1 class="title-row">Server is running 
+		<span class="mini-build" title="tiny running server">
+		    <!-- small inline playful SVG 'running server' -->
+		    <svg class="running-server" width=44 height="24" viewBox="0 0 44 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+		        <rect x="1" y="4" width="42" height="14" rx="2" fill="#071226" stroke="#2b3b59"/>
+		        <circle cx="8" cy="11" r="2" fill="#99ff99">
+		            <animate attributeName="opacity" values="0.2;1;0.2" dur="1.2s" repeatCount="indefinite"/>
+		        </circle>
+		        <circle cx="16" cy="11" r="2" fill="#a6c8ff">
+		            <animate attributeName="opacity" values="1;0.3;1" dur="1.6s" repeatCount="indefinite"/>
+		        </circle>
+		        <circle cx="24" cy="11" r="2" fill="#ffd6a6">
+		            <animate attributeName="cy" values="11;9;11" dur="1s" repeatCount="indefinite"/>
+		        </circle>
+		        <rect x="30" y="8" width="10" height="6" rx="1" fill="#102030"/>
+		    </svg>
+		</span>
+	</h1>
+
+
+	<p class="lead">Welcome! This Raspberry Pi Server quietly manages sensors and data.</p>
+
+
+	<div class="server-meta">
+		<strong>Info:</strong>
+		<span>{{ owner }}'s Server for Raspberry Pi 2</span>
+		<span>• created on {{ created_on }}</span>
+		<span>• uptime: <code>{{ uptime }}</code></span>
+	</div>
+
+	<figure class="math-joke-image">
+    	<img 
+        	alt="Math Joke" 
+        	src="{{ url_for('static', filename='img/MathJokes.jpg') }}" 
+        	onerror="this.style.display='none'" 
+        	class="math-joke-img"
+    	>
+    	<figcaption>Math Jokes – If you get them, you probably don't have any friends.</figcaption>
+	</figure>
+
+
+
+
+	<div class="buttons">
+		<a class="btn" href="{{ url_for('sensors.index') }}">Sensors</a>
+	</div>
+
+
+	<div class="card small-note">
+		<h3>About</h3>
+		<p>Running on Raspberry Pi 2 Model B. If the Pi goes to sleep, it dreams of printf statements.</p>
+	</div>
+
+
+	<div class="card small-note jokes">
+		<h3>Smile!</h3>
+		<p><strong>Elec:</strong> "Warum zappelt dein Lehrling die ganze Zeit?“ „Ach, das ist nur eine Phase…"</p>
+		<p><strong>Math:</strong> "Why was six afraid of seven? Because seven, eight, nine!"</p>
+		<p><strong>Elec:</strong> "Why did the capacitor kiss the resistor? He couldn't resist her."</p>		
+	</div>
+
+
+</section>
