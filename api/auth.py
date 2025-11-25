@@ -89,16 +89,18 @@ def require_auth_everywhere(app, exempt_paths=None):
         if request.path in exempt_paths:
             return None
 
-        # 1) API Key accepted
-        x_api = request.headers.get("X-API-Key")
+        # 1) API-Key prüfen
+        x_api = request.headers.get("X-API-Key", "")
         if x_api and API_KEY and secrets.compare_digest(x_api, API_KEY):
             return None
 
-        # 2) Basic Auth accepted
+        # 2) Basic Auth prüfen
         auth = request.authorization
-        if auth and secrets.compare_digest(auth.username or "", ADMIN_USER or "") and \
-                secrets.compare_digest(auth.password or "", ADMIN_PASSWORD or ""):
-            g.user = auth.username
-            return None
+        if auth:
+            username_ok = secrets.compare_digest(auth.username or "", ADMIN_USER or "")
+            password_ok = secrets.compare_digest(auth.password or "", ADMIN_PASSWORD or "")
+            if username_ok and password_ok:
+                return None
 
+        # Alles andere = 401
         return _unauthorized_response()
