@@ -75,7 +75,7 @@ def verify_session_cookie(token: str):
 
 
 # ----------------------------
-# Optional: global protection (alles schützen)
+# global protection 
 # ----------------------------
 def require_auth_everywhere(app, exempt_paths=None):
     """Registriere app.before_request um ALLE Pfade zu schützen.

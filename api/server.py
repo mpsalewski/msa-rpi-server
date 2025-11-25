@@ -122,6 +122,9 @@ def format_timedelta(delta):
 	return ' '.join(parts)
 
 
+	
+
+
 @app.route('/')
 def index():
 	"""Render the quiet server homepage and show uptime/info."""
