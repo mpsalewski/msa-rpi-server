@@ -35,15 +35,15 @@ def send_to_server(sensor_type, value):
     except requests.RequestException as e:
         print(f"Error sending {sensor_type}: {e}")
 
-
-def main(poll_interval=10):
+# update every 5 minutes
+def main(poll_interval=300):
     while True:
         try:
-            data_str = read_i2c_string_block()
+            data_str = read_i2c_string_block(I2C_ADDRESS)
             if ',' in data_str:
                 temp, hum = data_str.split(',')
-                send_to_server("temperature", temp)
-                send_to_server("humidity", hum)
+                send_to_server("temperature_msa_room", temp)
+                send_to_server("humidity_msa_room", hum)
             else:
                 print("Invalid I2C data:", data_str)
         except Exception as e:

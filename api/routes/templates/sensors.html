@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Sensordaten</title>
+<title>Sensor Data</title>
 
 <!-- Icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -99,18 +99,18 @@
 <div class="container">
 
     <h1>
-        Sensordaten
+        Sensor Data
         <i id="darkToggle" class="fa-solid fa-moon"></i>
     </h1>
 
     <!-- Formular -->
     <div class="card">
-        <h2><i class="fa-solid fa-plus"></i> Neue Messung hinzufügen</h2>
+        <h2><i class="fa-solid fa-plus"></i> add new measurement</h2>
 
         <form id="addForm">
-            <input type="text" name="sensor_type" placeholder="Typ (z.B. Temperatur)">
-            <input type="text" name="value" placeholder="Wert">
-            <input type="submit" value="Speichern">
+            <input type="text" name="sensor_type" placeholder="type (e.g. temperature)">
+            <input type="text" name="value" placeholder="value">
+            <input type="submit" value="save">
         </form>
 
         <p id="addStatus" style="margin-top:10px;"></p>
@@ -118,20 +118,20 @@
 
     <!-- Chart -->
     <div class="card">
-        <h2><i class="fa-solid fa-chart-line"></i> Live-Diagramm</h2>
+        <h2><i class="fa-solid fa-chart-line"></i> Live-Chart</h2>
         <canvas id="sensorChart" height="120"></canvas>
     </div>
 
     <!-- Tabelle -->
     <div class="card">
-        <h2><i class="fa-solid fa-table"></i> Live-Tabelle</h2>
+        <h2><i class="fa-solid fa-table"></i> Live-Table/h2>
 
         <table id="dataTable">
             <thead>
                 <tr>
-                    <th>Zeitpunkt</th>
-                    <th>Typ</th>
-                    <th>Wert</th>
+                    <th>Timestamp</th>
+                    <th>Type</th>
+                    <th>Value</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -159,7 +159,7 @@ document.getElementById("addForm").onsubmit = async (e) => {
         body: formData
     });
 
-    document.getElementById("addStatus").innerText = "Gespeichert ✔︎";
+    document.getElementById("addStatus").innerText = "saved ✔︎";
 
     setTimeout(() => document.getElementById("addStatus").innerText = "", 1400);
 
@@ -194,7 +194,7 @@ let chart = new Chart(ctx, {
     data: {
         labels: [],
         datasets: [{
-            label: "Temperature",
+            label: "Temperature MSA Room",
             data: [],
             borderWidth: 2,
             borderColor: "#4dabf7",
@@ -206,7 +206,7 @@ let chart = new Chart(ctx, {
             y: {
                 title: {
                     display: true,
-                    text: "Temperature [°C]" 
+                    text: "temperature [°C]" 
                 }
             }
         }
@@ -215,14 +215,14 @@ let chart = new Chart(ctx, {
 
 function updateChart(data) {
     // temp values only
-    const tempData = data.filter(d => d[0].toLowerCase() === "temperature");
+    const tempData = data.filter(d => d[0].toLowerCase() === "temperature_msa_room");
     chart.data.labels = tempData.map(d => d[2]).reverse();
     chart.data.datasets[0].data = tempData.map(d => d[1]).reverse();
     chart.update();
 }
 
 // Polling
-setInterval(updateData, 2000);
+setInterval(updateData, 5000);
 updateData();
 
 </script>

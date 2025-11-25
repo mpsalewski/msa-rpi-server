@@ -65,8 +65,7 @@ import os
 from auth import require_api_key, require_basic_auth, require_auth_everywhere
 import firewall
 firewall.setup_firewall(port=5000)
-from firewall import setup_firewall
-setup_firewall(port=5000)
+
 
 
 # record process start time (used for uptime display)
