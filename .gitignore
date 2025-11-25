@@ -16,6 +16,9 @@ venv/
 .DS_Store
 
 
+*.sqlite
+
+
 # Editor
 .vscode/
 

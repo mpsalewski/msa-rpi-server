@@ -1,10 +1,57 @@
-
+# server.py
+#
 # install pip3 install flask
+# pip install python-dotenv itsdangerous Flask-Limiter flask-cors gunicorn
+# optional: flask-httpauth, pyjwt, flask-wtf (CSRF), fail2ban ist Systempaket
+#
+#
+# generate safe tokens: 
+"""
+python3 - <<'PY'
+import secrets
+print(secrets.token_urlsafe(32))
+PY
+"""
+#
+#
+"""
+Firewall
+sudo apt install ufw
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+
+sudo ufw allow from 192.168.178.0/24 to any port 5000
+sudo ufw allow from 192.168.178.0/24 to any port 22   # SSH
+sudo ufw enable
+sudo ufw status
+→ Damit kann NICHTS aus dem Internet deinen Server erreichen.
+→ Nur dein Heimnetz hat Zugriff.
+
+
+later, when external access is wanted see:
+~/Desktop/rpi_external_access.txt 
+"""
+#
+#
 # source venv/bin/activate
 # run: python3 server.py
 #
 # in browser: http://<RaspberryPi-IP>:5000
-# add data: curl -d "value=23.5" -X POST http://<RaspberryPi-IP>:5000/add
+# add data: curl -d "value=23.5" -X POST http://<RaspberryPi-IP>:5000/add 
+# --> does not work anymore; use: 
+"""
+curl -X POST http://<R-Pi-IP>:5000/sensors/add \
+     -H "X-API-Key: <starker-api-key-32+>" \
+     -d "sensor_type=temperature" \
+     -d "value=23.5"
+"""
+# or
+"""
+curl -X POST http://<R-Pi-IP>:5000/sensors/add \
+     -u admin:<starkes-passwort-oder-better-hash> \
+     -d "sensor_type=temperature" \
+     -d "value=20.4"
+""" 
 
 
 # file: server.py (or your main module)
@@ -13,6 +60,11 @@ from routes.sensors import sensors_bp
 import database
 from datetime import datetime, timezone
 import socket
+from auth import require_api_key, require_basic_auth, require_auth_everywhere
+import firewall
+firewall.setup_firewall(port=5000)
+from firewall import setup_firewall
+setup_firewall(port=5000)
 
 
 # record process start time (used for uptime display)
@@ -20,6 +72,9 @@ START_TIME = datetime.now(timezone.utc)
 
 
 app = Flask(__name__)
+
+# Falls du ALLE Endpoints schützen willst:
+require_auth_everywhere(app, exempt_paths=['/'])  # dann musst du API-Key oder Basic bei jedem Request senden
 
 
 # init Database
@@ -91,6 +146,6 @@ def index():
 
 if __name__ == '__main__':
 	# listening on 0.0.0.0 allows other devices on the same local network to connect
-	app.run(host='0.0.0.0', port=5000)
+	app.run(host='0.0.0.0', port=5000, debug=False)
 
 

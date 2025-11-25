@@ -1,12 +1,16 @@
+# sensors.py
 from flask import Blueprint, request, render_template, redirect, url_for, jsonify
 from db_models import create_tables
 from database import get_connection
+# from auth import require_api_key, require_basic_auth #secure single routes
+
 
 sensors_bp = Blueprint("sensors", __name__, template_folder="templates/")
 
 create_tables()
 
 @sensors_bp.route('/sensors')
+#@require_basic_auth secure single routes
 def index():
     return render_template("sensors.html")
 
@@ -23,6 +27,7 @@ def get_data():
 
 
 @sensors_bp.route('/sensors/add', methods=['POST'])
+#@require_api_key() #secure single routes 
 def add():
     sensor_type = request.form.get('sensor_type')
     value = request.form.get('value')
