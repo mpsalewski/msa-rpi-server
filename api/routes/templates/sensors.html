@@ -156,8 +156,7 @@ document.getElementById("addForm").onsubmit = async (e) => {
 
     let res = await fetch("/sensors/add", {
         method: "POST",
-        body: formData,
-        credentials: "include"
+        body: formData
     });
 
     document.getElementById("addStatus").innerText = "Gespeichert ✔︎";
@@ -169,9 +168,7 @@ document.getElementById("addForm").onsubmit = async (e) => {
 
 // ------------------ LIVE DATA ------------------
 async function updateData() {
-    let res = await fetch("/sensors/data", {
-		credentials: "include"
-	});
+    let res = await fetch("/sensors/data");
     let data = await res.json();
 
     // Tabelle aktualisieren
