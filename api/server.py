@@ -60,6 +60,8 @@ from routes.sensors import sensors_bp
 import database
 from datetime import datetime, timezone
 import socket
+import subprocess
+import os
 from auth import require_api_key, require_basic_auth, require_auth_everywhere
 import firewall
 firewall.setup_firewall(port=5000)
@@ -83,6 +85,11 @@ database.init_db()
 
 # register routes
 app.register_blueprint(sensors_bp)
+
+
+# start i2c script
+i2c_script = os.path.join(os.path.dirname(__file__), "../src/py/read_i2c.py")
+subprocess.Popen(["python3", i2c_script])
 
 
 # get local ip for homepage display
