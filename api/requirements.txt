@@ -1,0 +1,4 @@
+Flask
+requests
+smbus2
+python-dotenv
