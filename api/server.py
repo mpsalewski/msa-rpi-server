@@ -87,8 +87,8 @@ app.register_blueprint(sensors_bp)
 
 
 # start i2c script
-i2c_script = os.path.join(os.path.dirname(__file__), "../src/py/read_i2c.py")
-subprocess.Popen(["python3", i2c_script])
+#i2c_script = os.path.join(os.path.dirname(__file__), "../src/py/read_i2c.py")
+#subprocess.Popen(["python3", i2c_script])
 
 
 # get local ip for homepage display
