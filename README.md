@@ -182,6 +182,8 @@ Errors are returned as JSON with an appropriate HTTP status code.
 ---
 
 ## I2C Reader
+> **Note:** In the future, I2C will likely be used less frequently, as most sensors are expected to communicate over Wi-Fi or other wireless protocols.
+
 `src/py/read_i2c.py` contains an example script to read data from an I2C device and POST to `/sensors/add`.
 
 - The script expects the device to return `"temperature,humidity"` style strings (adjust parsing as needed).
@@ -192,6 +194,17 @@ python3 src/py/read_i2c.py
 ```
 
 You can modify the script to read from other I2C sensors or to post additional metadata (e.g. `location`, `sensor_id`).
+
+- The script can also be started from `server.py`, but the lines are currently commented out:
+
+```python
+# Optionally start external I2C data-reading script
+# i2c_script = os.path.join(os.path.dirname(__file__), "../src/py/read_i2c.py")
+# subprocess.Popen(["python3", i2c_script])
+```
+
+
+
 
 ---
 
