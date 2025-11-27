@@ -52,7 +52,7 @@ def create_tables():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             sensor_type TEXT,
             value TEXT,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            timestamp DATETIME DEFAULT (datetime('now','localtime'))
         )
     ''')
 
