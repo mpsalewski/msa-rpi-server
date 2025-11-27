@@ -78,11 +78,9 @@ void sendSensorData(const char* sensorType, float value);
 /**************************** Setup ******************************************/
 void setup() {
 
-    Serial.begin(9600);
-
 
     /* Initialize serial interface */                                          
-    Serial.begin(9600);
+    Serial.begin(115200);
 
     /* Initialize DHT sensor */                                                
     dht.begin();
@@ -140,39 +138,75 @@ void setup() {
 /******************************** main loop **********************************/
 void loop() {
   
+    /* Check WiFi connection status; attempt reconnect if disconnected */
+    if (WiFi.status() != WL_CONNECTED) {
+        
+        Serial.println(F("WiFi lost — attempting reconnect..."));
+
+        /* Try reconnect */
+        WiFi.disconnect();
+        WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
+        uint8_t retries = 0;
+        /* Try six mintues to reconnect */
+        while (WiFi.status() != WL_CONNECTED && retries < 600) {
+            delay(1000);
+            Serial.print(F("."));
+            retries++;
+        }
+
+        Serial.println();
+
+        if (WiFi.status() == WL_CONNECTED) {
+            Serial.println(F("WiFi reconnected successfully!"));
+            Serial.print(F("IP address: ")); Serial.println(WiFi.localIP());
+        } 
+        else {
+            Serial.println(F("WiFi reconnect failed"));
+
+            Serial.println(F("restarting..."));
+            delay(10000);  
+            ESP.restart();
+        }
+    }
+
+
 
     /* Read temperature event */                                               
     sensors_event_t event;
     dht.temperature().getEvent(&event);
 
     if (isnan(event.temperature)) {
-    Serial.println(F("Error reading temperature!"));
-    } else {
-    temperature = event.temperature;
-    Serial.print(F("Temperature: "));
-    Serial.print(temperature);
-    Serial.println(F(" °C"));
+        Serial.println(F("Error reading temperature!"));
+    } 
+    else {
+        temperature = event.temperature;
+        Serial.print(F("Temperature: "));
+        Serial.print(temperature);
+        Serial.println(F(" °C"));
     }
 
     /* Read humidity event */                                                  
     dht.humidity().getEvent(&event);
 
     if (isnan(event.relative_humidity)) {
-    Serial.println(F("Error reading humidity!"));
-    } else {
-    humidity = event.relative_humidity;
-    Serial.print(F("Humidity: "));
-    Serial.print(humidity);
-    Serial.println(F(" %"));
+        Serial.println(F("Error reading humidity!"));
+    } 
+    else {
+        humidity = event.relative_humidity;
+        Serial.print(F("Humidity: "));
+        Serial.print(humidity);
+        Serial.println(F(" %"));
     }
 
     /* Transmit data to server */                                              
     if (WiFi.status() == WL_CONNECTED) {
-    sendSensorData("temperature_msa_room", temperature);
-    sendSensorData("humidity_msa_room", humidity);
+        sendSensorData("temperature_msa_room", temperature);
+        sendSensorData("humidity_msa_room", humidity);
     } else {
-    Serial.println("WiFi not connected — data not sent");
+        Serial.println("WiFi not connected — data not sent");
     }
+
 
     /* Delay until next sensor cycle */                                        
     delay(delayMS);     
@@ -212,13 +246,15 @@ void sendSensorData(const char* sensorType, float value) {
     int httpResponseCode = http.POST(postData);
 
     if (httpResponseCode > 0) {
-        Serial.print("Server Antwort: ");
+        Serial.print("Server response: ");
         Serial.println(http.getString());
     } else {
-        Serial.print("Fehler beim Senden: ");
+        Serial.print("Transmission error: ");
         Serial.println(httpResponseCode);
     }
 
     /* Cleanup */
     http.end();
 }
+
+
