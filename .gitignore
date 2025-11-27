@@ -31,6 +31,7 @@ api/uploads/
 *.o
 *main
 
+secrets.h
 
 # private atm
 
