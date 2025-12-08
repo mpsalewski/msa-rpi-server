@@ -133,6 +133,47 @@
         box-sizing: border-box;  /* Padding in die Höhe einbeziehen */
     }
 
+    .small-card.free {
+        border: 2px solid #28a745;
+        color: #28a745;
+    }
+
+    .small-card.occupied {
+        border: 2px solid #dc3545;
+        color: #dc3545;
+    }
+
+    /* Slow down the beat for bathroom occupied */
+    #secondBoxIcon .fa-beat {
+        animation-duration: 2s; /* default is 1s, slower is 2s */
+    }
+
+    /* Slow down the beat for bathroom occupied */
+    #secondBoxIcon .fa-beat {
+        animation-duration: 2s; /* slower blinking */
+    }
+
+    /* Droplet animation */
+    @keyframes drop {
+        0% { transform: translateY(0); opacity:1; }
+        50% { transform: translateY(20px); opacity:0.5; }
+        100% { transform: translateY(0); opacity:1; }
+    }
+
+    #secondBoxIcon {
+        position: relative; /* needed for droplet positioning */
+    }
+
+    #secondBoxIcon .fa-droplet {
+        position: absolute;
+        top: 60px; /* adjust depending on icon size */
+        left: 50%;
+        transform: translateX(-50%);
+        animation: drop 1s infinite;
+        color: #00f; /* optional blue for water */
+    }
+
+
 </style>
 </head>
 <body>
@@ -160,11 +201,15 @@
             </p>
         </div>
 
-        <!-- Platzhalter für zweite Karte -->
+        <!-- Bathroom Main -->
         <div class="card small-card" id="secondBox">
-            <h2><i class="fa-solid fa-some-icon"></i> Second Box</h2>
-            <p style="text-align:center; margin-top:15px;">Coming soon...</p>
+            <h2><i class="fa-solid fa-bath"></i> Main Bathroom</h2>
+            <div id="secondBoxIcon" style="font-size:50px; margin-top:10px;">
+                <i class="fa-solid fa-toilet-paper"></i>
+            </div>
+            <p id="secondBoxStatus" style="margin-top:10px; text-align:center;">Loading...</p>
         </div>
+
     </div>
 
 
@@ -256,6 +301,8 @@ async function updateData() {
 
     updateChart(data);
     updateTraffic(data);
+    updateBathroom(data);
+
 
 }
 
@@ -318,6 +365,38 @@ function updateTraffic(data) {
     }
 }
 
+// ------------------ UPDATE BATHROOM STATUS ------------------
+// This function updates the "Second Box" to show bathroom_main occupancy
+function updateBathroom(data) {
+    // Filter the data for bathroom_main
+    const bathroomData = data.find(d => d[0].toLowerCase() === "bathroom_main");
+    if (!bathroomData) return;
+
+    const [type, value, ts] = bathroomData;
+
+    // Get references to elements
+    const iconBox = document.getElementById("secondBox").querySelector("#secondBoxIcon");
+    const status = document.getElementById("secondBoxStatus");
+    const card = document.getElementById("secondBox");
+
+    // value: 0 = occupied, 1 = free
+    if (value == 1) {
+        // Free
+        iconBox.innerHTML = '<i class="fa-solid fa-toilet-paper"></i>';  // funny icon
+        card.classList.remove("occupied");
+        card.classList.add("free");
+        status.innerText = `Free (${ts})`;
+    } else {
+        // Occupied
+        //iconBox.innerHTML = '<i class="fa-solid fa-toilet-paper fa-beat"></i>'; // animate if occupied
+        iconBox.innerHTML = `
+            <i class="fa-solid fa-toilet-paper-slash fa-beat"></i>
+        `;
+        card.classList.remove("free");
+        card.classList.add("occupied");
+        status.innerText = `Occupied (${ts})`;
+    }
+}
 
 
 // Polling

@@ -98,6 +98,9 @@ if __name__ == "__main__":
     #send("temperature", 23.8)
     #send("room_entrance", 1)
     
-    send("apartment_traffic", 0.0)
+    #send("apartment_traffic", 0.0)
     #send("apartment_traffic", 1.0)    
+
+    send("bathroom_main", 0.0)    
+    #send("bathroom_main", 1.0)    
 #-----------------------------------------------------------------------------#
