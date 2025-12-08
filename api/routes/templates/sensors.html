@@ -92,6 +92,47 @@
         font-size: 22px;
         margin-right: 15px;
     }
+
+
+    #trafficBox i {
+    transition: color .2s, transform .2s;
+    }
+
+    .traffic-entry {
+        color: #28a745;
+    }
+
+    .traffic-exit {
+        color: #dc3545;
+    }
+
+    .traffic-entry i {
+        transform: scale(1.15);
+    }
+
+    .traffic-exit i {
+        transform: scale(1.15) rotate(180deg);
+    }
+
+    /* Container für die beiden kleinen Karten */
+    .card-row {
+        display: flex;
+        gap: 20px; /* Abstand zwischen den Karten */
+        margin-bottom: 25px;
+    }
+
+    .small-card {
+        flex: 1 1 45%;
+        height: 200px;        /* feste Höhe */
+        display: flex;
+        flex-direction: column;
+        justify-content: center; /* Icon und Text vertikal zentrieren */
+        align-items: center;     /* horizontal zentrieren */
+        text-align: center;
+        padding: 10px;           /* weniger Padding, damit Höhe stimmt */
+        box-sizing: border-box;  /* Padding in die Höhe einbeziehen */
+    }
+
 </style>
 </head>
 <body>
@@ -102,6 +143,38 @@
         Sensor Data
         <i id="darkToggle" class="fa-solid fa-moon"></i>
     </h1>
+
+    <!-- Container für die beiden kleinen Karten nebeneinander -->
+    <div class="card-row">
+        <!-- Apartment Traffic -->
+        <div class="card small-card" id="trafficBox">
+            <h2><i class="fa-solid fa-person-walking"></i> Apartment Traffic</h2>
+
+            <div id="trafficIcon" style="font-size:50px; margin-top:10px;">
+                <i class="fa-solid fa-door-open"></i>
+            </div>
+
+
+            <p id="trafficStatus" style="text-align:center; margin-top:15px;">
+                Loading...
+            </p>
+        </div>
+
+        <!-- Platzhalter für zweite Karte -->
+        <div class="card small-card" id="secondBox">
+            <h2><i class="fa-solid fa-some-icon"></i> Second Box</h2>
+            <p style="text-align:center; margin-top:15px;">Coming soon...</p>
+        </div>
+    </div>
+
+
+    <!-- Chart -->
+    <div class="card">
+        <h2><i class="fa-solid fa-chart-line"></i> Live-Chart</h2>
+        <canvas id="sensorChart" height="120"></canvas>
+    </div>
+
+
 
     <!-- Formular -->
     <div class="card">
@@ -114,12 +187,6 @@
         </form>
 
         <p id="addStatus" style="margin-top:10px;"></p>
-    </div>
-
-    <!-- Chart -->
-    <div class="card">
-        <h2><i class="fa-solid fa-chart-line"></i> Live-Chart</h2>
-        <canvas id="sensorChart" height="120"></canvas>
     </div>
 
     <!-- Tabelle -->
@@ -137,6 +204,9 @@
             <tbody></tbody>
         </table>
     </div>
+
+
+
 
 </div>
 
@@ -185,6 +255,8 @@ async function updateData() {
     }
 
     updateChart(data);
+    updateTraffic(data);
+
 }
 
 // ------------------ CHART ------------------
@@ -220,6 +292,33 @@ function updateChart(data) {
     chart.data.datasets[0].data = tempData.map(d => d[1]).reverse();
     chart.update();
 }
+
+
+function updateTraffic(data) {
+    const trafficData = data.filter(d => d[0].toLowerCase() === "apartment_traffic");
+
+    if (!trafficData.length) return;
+
+    let [type, value, ts] = trafficData[0];  // nur letzte
+
+    let iconBox = document.getElementById("trafficIcon");
+    let status = document.getElementById("trafficStatus");
+    let card = document.getElementById("trafficBox");
+
+    if (value == 0) {
+        iconBox.innerHTML = '<i class="fa-solid fa-door-open"></i>';
+        card.classList.add("traffic-entry");
+        card.classList.remove("traffic-exit");
+        status.innerText = `Entry detected (${ts})`;
+    } else {
+        iconBox.innerHTML = '<i class="fa-solid fa-door-closed"></i>';
+        card.classList.add("traffic-exit");
+        card.classList.remove("traffic-entry");
+        status.innerText = `Exit detected (${ts})`;
+    }
+}
+
+
 
 // Polling
 setInterval(updateData, 5000);
