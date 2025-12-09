@@ -29,6 +29,11 @@ Notes:
             continues (non-fatal).
           - Malformed I2C packets are ignored gracefully.
           - I2C_DEVICE and /sensors/add URL must match your backend setup.
+
+Pinout:    
+    • SDA --> Pin 3 (GPIO2)
+    • SCL --> Pin 5 (GPIO3)
+    • connect both GND
 """
 #-----------------------------------------------------------------------------#
 
