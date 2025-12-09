@@ -1,5 +1,5 @@
 /******************************************************************************
- * 
+ *
  * File:           iot_informer.ino
  * Author(s):      Mika Paul Salewski
  * Created:        2025-12-08
@@ -7,41 +7,48 @@
  * Version:        2025.12.09
  *
  * Title:
- *     ESP32 Room Monitor — Temperature & Humidity Sender
+ *     Arduino IoT Informer — Bathroom Occupancy Display & I2C Informer
  *
  * Description:
- *     This firmware runs on an ESP32 and periodically reads
- *     temperature and humidity values from a DHT11 sensor.
- *     The measured values are transmitted to a Raspberry Pi
- *     REST API backend using HTTP POST requests.
+ *     This firmware runs on an ESP32 and acts as an I2C slave to a master
+ *     controller (e.g., Raspberry Pi). It receives occupancy updates for the
+ *     main bathroom and displays the status on a 16x2 LCD with custom icons.
+ *     Free/Occupied status and elapsed occupancy time are shown.
+ *
+ *     Key features:
+ *         + I2C slave communication for sensor updates
+ *         + 16x2 LCD display with custom emoji characters
+ *         + Tracks first occupancy timing
+ *         + Simple, robust design for embedded environments
  *
  * Copyright:
  *     (c) 2025, Mika Paul Salewski
  *
  * License:
- *    CC BY-NC-SA 4.0
- * 
+ *     CC BY-NC-SA 4.0
+ *
  * Notes:
- *     - WiFi credentials and server API keys are stored in
- *       the separate secrets.h file (excluded from version control).
- *     - This module is intentionally simple and robust for
- *       embedded environments.
- *  
+ *     - I2C address: 0x08
+ *     - WiFi not used in this module
+ *     - Bathroom status codes:
+ *         0 = OCCUPIED
+ *         1 = FREE
+ *     - Custom emoji characters stored in msa_lcd.h
  *
  *
- *    The circuit:
- * LCD RS pin to digital pin 12
- * LCD Enable pin to digital pin 11
- * LCD D4 pin to digital pin 5
- * LCD D5 pin to digital pin 4
- * LCD D6 pin to digital pin 3
- * LCD D7 pin to digital pin 2
- * LCD R/W pin to ground
- * LCD VSS pin to ground
- * LCD VCC pin to 5V
- * 10K resistor:
- * ends to +5V and ground
- * wiper to LCD VO pin (pin 3)
+ * The circuit:
+ *  LCD RS pin to digital pin 12
+ *  LCD Enable pin to digital pin 11
+ *  LCD D4 pin to digital pin 5
+ *  LCD D5 pin to digital pin 4
+ *  LCD D6 pin to digital pin 3
+ *  LCD D7 pin to digital pin 2
+ *  LCD R/W pin to ground
+ *  LCD VSS pin to ground
+ *  LCD VCC pin to 5V
+ *  10K resistor:
+ *  ends to +5V and ground
+ *  wiper to LCD VO pin (pin 3)
  *
 ******************************************************************************/
 
@@ -66,19 +73,18 @@
 
 
 /************************* Local Variables ***********************************/
-/* 
- * initialize the library by associating any needed LCD interface pin 
- * with the arduino pin number it is connected to
-*/
+/* LCD pin mapping annd create instance */
 const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
+/* Timer for occupancy duration */
 unsigned long time_diff=0;
 
+/* Bathroom status flags */
 uint8_t bathroom_status = 0;
 uint8_t bathroom_status_change = 0;
 
-
+/* I2C input buffer */
 String inputString = "";
 bool stringComplete = false;
 
@@ -86,7 +92,7 @@ bool stringComplete = false;
 /************************** Function Declaration *****************************/
 void requestEvent(void);
 void receiveEvent(int howMany);
-
+void processData(String data);
 
 
 /**************************** Setup ******************************************/
@@ -102,14 +108,14 @@ void setup() {
     Wire.onReceive(receiveEvent);   // Register callback when data is received by master            
 
 
-    /* Initialize LCD */
+    /* Initialize 16x2 LCD */
     lcd.begin(16, 2);
     lcd.clear();
 
     /* Print a message to the LCD. */
     lcd.print("Hey, Fuckers!");
 
-    // Create the 4 custom characters for the emoji
+    /* Create custom characters for emoji display */
     lcd.createChar(0, unhappyTopLeft);
     lcd.createChar(1, unhappyTopRight);
     lcd.createChar(2, unhappyBottomLeft);
@@ -129,7 +135,7 @@ void setup() {
 /******************************** main loop **********************************/
 void loop() {
 
-    /* check if new data available*/
+    /* Process I2C input when a complete string has been received */
     if (stringComplete) {
         Serial.println("Received: " + inputString); 
         processData(inputString);
@@ -137,16 +143,18 @@ void loop() {
         stringComplete = false;
     }
 
+
+    /* Update LCD display based on bathroom status */
     if(bathroom_status == BATHROOM_MAIN_FREE){
         
-        /* indicate bathroom status change for counter in occupied */
+        /* Mark status change for timing */
         bathroom_status_change = 1;
 
-        /* set free display version on bottom row on lcd */
+        /* Display FREE status text */
         lcd.setCursor(0, 1);
         lcd.print("Feel Free    ");
 
-        /* set free toilet icon */
+        /* Display free toilet icon */
         lcd.setCursor(14, 0);
         lcd.write(byte(4));
         lcd.write(byte(5));
@@ -157,22 +165,22 @@ void loop() {
     }
     else{
 
-        /* check if this is the first entry after free */
+        /* Track first entry timestamp after free */
         if(bathroom_status_change){
             bathroom_status_change = 0;
             time_diff=millis();
         }
 
-        /* set occupied display version on bottom row on lcd */
+        /* Display OCCUPIED status text with elapsed seconds */
         lcd.setCursor(0, 1);
         lcd.print("Shiting ");
 
 
-        // print the number of seconds since reset:
+        /* print the number of seconds since reset */
         lcd.print((millis()-time_diff) / 1000);
         lcd.print("s");
 
-        /* set occupied toilet icon */
+        /* Display occupied toilet icon */
         lcd.setCursor(14, 0);
         lcd.write(byte(0)); 
         lcd.write(byte(1)); 
@@ -191,54 +199,33 @@ void loop() {
 /***
  * void requestEvent(void)
  * 
- * @brief 
- *   
- * Callback executed when master requests data 
- *
- * @param sensorType  String identifying the sensor type
- * @param value       Numeric measurement value
- * 
- * @return None
- * 
- * @note Adds API key in headers for authentication.
+ * @brief
+ *     Callback executed when I2C master requests data.
+ *     Currently placeholder; can send temperature/humidity data in future.
 ***/
 void requestEvent(void) {
-#if 0
-    // Prepare data as CSV: "temperature,humidity"
-    char buffer[40];
-    char t[10], h[10];
-
-    dtostrf(temperature, 0, 2, t);
-    dtostrf(humidity, 0, 2, h);
-
-    int len = sprintf(buffer, "%s,%s#", t, h);
-    buffer[len] = '\0';
-
-    Serial.println(buffer);
-    Wire.write((uint8_t*)buffer, len);
-
-#endif 
+    // Placeholder: No data sent currently
 }
 
 
 
 
 /***
- * void receiveEvent(void) 
+ * void receiveEvent(int howMany)
  * 
- * @brief 
- *   
- * Callback executed when data is received from master 
+ * @brief
+ *     Callback executed when data is received from I2C master.
+ *     Buffers input until '#' termination character.
  *
- * @param sensorType  String identifying the sensor type
- * @param value       Numeric measurement value
+ * @param howMany  Number of bytes received from master
  * 
  * @return None
  * 
- * @note Adds API key in headers for authentication.
+ * @note 
+ * 
 ***/
 void receiveEvent(int howMany){
-    //inputString = "";   
+    
     while (Wire.available()) {
     
         char c = Wire.read();
@@ -255,18 +242,17 @@ void receiveEvent(int howMany){
 
 
 /***
- * void receiveEvent(void) 
+ * void processData(String data)
  * 
- * @brief 
- *   
- * Callback executed when data is received from master 
+ * @brief
+ *     Parses incoming sensor data and updates bathroom status.
+ *     Handles 'apartment_traffic' and 'bathroom_main' sensor types.
  *
- * @param sensorType  String identifying the sensor type
- * @param value       Numeric measurement value
+ * @param data  CSV string formatted as "sensor_type,value"
  * 
  * @return None
  * 
- * @note Adds API key in headers for authentication.
+ * @note 
 ***/
 void processData(String data) {
 
