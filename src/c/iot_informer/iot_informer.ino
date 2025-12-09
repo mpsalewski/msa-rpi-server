@@ -1,15 +1,35 @@
-/*
-  LiquidCrystal Library - Hello World
-
- Demonstrates the use a 16x2 LCD display.  The LiquidCrystal
- library works with all LCD displays that are compatible with the
- Hitachi HD44780 driver. There are many of them out there, and you
- can usually tell them by the 16-pin interface.
-
- This sketch prints "Hello World!" to the LCD
- and shows the time.
-
-  The circuit:
+/******************************************************************************
+ * 
+ * File:           iot_informer.ino
+ * Author(s):      Mika Paul Salewski
+ * Created:        2025-12-08
+ * Last Updated:   2025-12-09
+ * Version:        2025.12.09
+ *
+ * Title:
+ *     ESP32 Room Monitor — Temperature & Humidity Sender
+ *
+ * Description:
+ *     This firmware runs on an ESP32 and periodically reads
+ *     temperature and humidity values from a DHT11 sensor.
+ *     The measured values are transmitted to a Raspberry Pi
+ *     REST API backend using HTTP POST requests.
+ *
+ * Copyright:
+ *     (c) 2025, Mika Paul Salewski
+ *
+ * License:
+ *    CC BY-NC-SA 4.0
+ * 
+ * Notes:
+ *     - WiFi credentials and server API keys are stored in
+ *       the separate secrets.h file (excluded from version control).
+ *     - This module is intentionally simple and robust for
+ *       embedded environments.
+ *  
+ *
+ *
+ *    The circuit:
  * LCD RS pin to digital pin 12
  * LCD Enable pin to digital pin 11
  * LCD D4 pin to digital pin 5
@@ -22,46 +42,71 @@
  * 10K resistor:
  * ends to +5V and ground
  * wiper to LCD VO pin (pin 3)
+ *
+******************************************************************************/
 
- Library originally added 18 Apr 2008
- by David A. Mellis
- library modified 5 Jul 2009
- by Limor Fried (http://www.ladyada.net)
- example added 9 Jul 2009
- by Tom Igoe
- modified 22 Nov 2010
- by Tom Igoe
- modified 7 Nov 2016
- by Arturo Guadalupi
 
- This example code is in the public domain.
 
- https://docs.arduino.cc/learn/electronics/lcd-displays
-
-*/
-
-// include the library code:
+/************************ Includes / Libraries *******************************/
 #include <LiquidCrystal.h>
 #include "msa_lcd.h"
+#include <Wire.h>
+
+
+/*************************** Local Defines ***********************************/
+/* I2C Slave address */
+#define I2C_ADDRESS 0x08    
+
+#define BATHROOM_MAIN_OCCUPIED 0 
+#define BATHROOM_MAIN_FREE 1 
+
+/************************** Local Structure **********************************/
+/* (Reserved for future struct definitions if needed) */   
 
 
 
-// initialize the library by associating any needed LCD interface pin
-// with the arduino pin number it is connected to
+/************************* Local Variables ***********************************/
+/* 
+ * initialize the library by associating any needed LCD interface pin 
+ * with the arduino pin number it is connected to
+*/
 const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 unsigned long time_diff=0;
 
+uint8_t bathroom_status = 0;
+uint8_t bathroom_status_change = 0;
 
+
+String inputString = "";
+bool stringComplete = false;
+
+
+/************************** Function Declaration *****************************/
+void requestEvent(void);
+void receiveEvent(int howMany);
+
+
+
+/**************************** Setup ******************************************/
 void setup() {
 
+    /* Initialize serial interface */         
+    Serial.begin(9600);
 
-    // set up the LCD's number of columns and rows:
+
+    /* Initialize I2C interface */         
+    Wire.begin(I2C_ADDRESS);        // Initialize Arduino as I2C slave
+    Wire.onRequest(requestEvent);   // Register callback when master requests data
+    Wire.onReceive(receiveEvent);   // Register callback when data is received by master            
+
+
+    /* Initialize LCD */
     lcd.begin(16, 2);
     lcd.clear();
 
-    // Print a message to the LCD.
+    /* Print a message to the LCD. */
     lcd.print("Hey, Fuckers!");
 
     // Create the 4 custom characters for the emoji
@@ -77,59 +122,195 @@ void setup() {
 
 
 }
+/*****************************************************************************/
 
 
+
+/******************************** main loop **********************************/
 void loop() {
 
-   
+    /* check if new data available*/
+    if (stringComplete) {
+        processData(inputString);
+        inputString = "";
+        stringComplete = false;
+    }
 
-    time_diff=millis();
-    for(int i = 0;i <26; i++){
+    if(bathroom_status == BATHROOM_MAIN_FREE){
         
-        
+        /* indicate bathroom status change for counter in occupied */
+        bathroom_status_change = 1;
 
-         // set the cursor to column 0, line 1
-        // (note: line 1 is the second row, since counting begins with 0):
+        /* set free display version on bottom row on lcd */
         lcd.setCursor(0, 1);
+        lcd.print("Feel Free    ");
 
+        /* set free toilet icon */
+        lcd.setCursor(14, 0);
+        lcd.write(byte(4));
+        lcd.write(byte(5));
+        lcd.setCursor(14, 1);
+        lcd.write(byte(6));
+        lcd.write(byte(7));
+
+    }
+    else{
+
+        /* check if this is the first entry after free */
+        if(bathroom_status_change){
+            bathroom_status_change = 0;
+            time_diff=millis();
+        }
+
+        /* set occupied display version on bottom row on lcd */
+        lcd.setCursor(0, 1);
         lcd.print("Shiting ");
+
 
         // print the number of seconds since reset:
         lcd.print((millis()-time_diff) / 1000);
         lcd.print("s");
 
-        // show big icon at right edge (columns 14+15)
-        
+        /* set occupied toilet icon */
         lcd.setCursor(14, 0);
-        lcd.write(byte(0)); // top-left
-        lcd.write(byte(1)); // top-right
+        lcd.write(byte(0)); 
+        lcd.write(byte(1)); 
         lcd.setCursor(14, 1);
-        lcd.write(byte(2)); // bottom-left
-        lcd.write(byte(3)); // bottom-right
-         delay(250);
+        lcd.write(byte(2)); 
+        lcd.write(byte(3)); 
 
     }
-    for(int i = 0;i <26; i++){
 
-        
-        lcd.setCursor(0, 1);
-        //if()
-
-        lcd.print("Feel Free    ");
-
-        // Non-Shitting Icon
-        lcd.setCursor(14, 0);
-        lcd.write(byte(4));
-        lcd.write(byte(5));
-
-        lcd.setCursor(14, 1);
-        lcd.write(byte(6));
-        lcd.write(byte(7));
-        
-        delay(250);
-    }
-
-    
-
+    delay(100);
 
 }
+
+
+/************************** Function Definitions *****************************/
+/***
+ * void requestEvent(void)
+ * 
+ * @brief 
+ *   
+ * Callback executed when master requests data 
+ *
+ * @param sensorType  String identifying the sensor type
+ * @param value       Numeric measurement value
+ * 
+ * @return None
+ * 
+ * @note Adds API key in headers for authentication.
+***/
+void requestEvent(void) {
+#if 0
+    // Prepare data as CSV: "temperature,humidity"
+    char buffer[40];
+    char t[10], h[10];
+
+    dtostrf(temperature, 0, 2, t);
+    dtostrf(humidity, 0, 2, h);
+
+    int len = sprintf(buffer, "%s,%s#", t, h);
+    buffer[len] = '\0';
+
+    Serial.println(buffer);
+    Wire.write((uint8_t*)buffer, len);
+
+#endif 
+}
+
+
+
+
+/***
+ * void receiveEvent(void) 
+ * 
+ * @brief 
+ *   
+ * Callback executed when data is received from master 
+ *
+ * @param sensorType  String identifying the sensor type
+ * @param value       Numeric measurement value
+ * 
+ * @return None
+ * 
+ * @note Adds API key in headers for authentication.
+***/
+void receiveEvent(int howMany){
+    
+    while (Wire.available()) {
+    
+        char c = Wire.read();
+        
+        if (c == '#') {
+            stringComplete = true;
+        } 
+        else {
+            inputString += c;
+        }
+    }
+}
+
+
+
+/***
+ * void receiveEvent(void) 
+ * 
+ * @brief 
+ *   
+ * Callback executed when data is received from master 
+ *
+ * @param sensorType  String identifying the sensor type
+ * @param value       Numeric measurement value
+ * 
+ * @return None
+ * 
+ * @note Adds API key in headers for authentication.
+***/
+void processData(String data) {
+
+    /* check if the message contains a comma */
+    int commaIndex = data.indexOf(',');
+    if (commaIndex == -1) {
+        Serial.println("invalid data: " + data);
+        return;
+    }
+
+    /* extract numeric value from data */
+    String sensorType = data.substring(0, commaIndex);
+
+    /* extract value */ 
+    float value = data.substring(commaIndex + 1).toFloat();
+
+    /* handle different sensor types */
+    /* apartment_traffic */
+    if (sensorType == "apartment_traffic") {
+        if (value == 1.0) {
+            Serial.println("Apartment EXIT!");
+        } 
+        else if (value == 0.0) {
+            Serial.println("Apartment ENTRY!");
+        } 
+        else {
+            Serial.println("invalid value for apartment_traffic: " + String(value));
+        }
+    } 
+    /* bathroom_main */
+    else if (sensorType == "bathroom_main") {
+        if (value == 1.0) {
+            Serial.println("Main Bathroom is FREE!");
+        } 
+        else if (value == 0.0) {
+            Serial.println("Main Bathroom is OCCUPIED!");
+        } 
+        else {
+            Serial.println("invalid value for bathroom_main: " + String(value));
+        }
+        bathroom_status = (uint8_t)value;
+    } 
+    else {
+        Serial.println("unregistered sensor_type: " + sensorType);
+    }
+}
+
+
