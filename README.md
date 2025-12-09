@@ -1,4 +1,4 @@
-# Raspberry Pi REST API Backend
+# Raspberry Pi REST API Server
 
 **Author:** Mika Paul Salewski  
 **Created:** 2025-11-26  
@@ -7,7 +7,7 @@
 ---
 
 ## Short description
-Lightweight Flask backend for collecting sensor data (I2C / Wi‑Fi), storing it in SQLite, and exposing a small web UI and REST endpoints. Supports API key and Basic Auth. Includes configuration and firewall helper scripts.
+Compact Flask-based server for collecting sensor readings on a Raspberry Pi (SQLite) with ready-to-run client examples for ESP32 / Arduino and exposing a small web UI. Supports API key and Basic Auth. Includes configuration and firewall helper scripts.
 
 ---
 
@@ -20,17 +20,20 @@ Lightweight Flask backend for collecting sensor data (I2C / Wi‑Fi), storing it
 6. [Running (development & production)](#running)
 7. [Authentication](#authentication)
 8. [API Endpoints](#api-endpoints)
-9. [I2C Reader](#i%C2%B2c-reader)
-10. [Database](#database)
-11. [Firewall helper (UFW)](#firewall-helper-ufw)
-12. [Development & testing](#development--testing)
-13. [Troubleshooting](#troubleshooting)
-14. [License](#license)
+9. [Client sketches (`src/c`)](#client-sketches]
+10. [I2C Reader](#i%C2%B2c-reader)
+11. [Database](#database)
+12. [Firewall helper (UFW)](#firewall-helper-ufw)
+13. [Development & testing](#development--testing)
+14. [Troubleshooting](#troubleshooting)
+15. [License](#license)
 
 ---
 
 ## Overview
-This small Flask-based REST API is designed for Raspberry Pi projects that need a compact backend to receive sensor readings (for example from an Arduino over I2C or from Wi‑Fi sensors), store them in a local SQLite database (`server.db`) and provide basic visualization and HTTP endpoints to retrieve and add data.
+This project provides a server-first solution for small IoT setups: a Flask app running on a Raspberry Pi that receives sensor data, stores it locally (SQLite) database (`server.db`), and exposes both a UI and REST endpoints for integrations. Client examples for ESP32 (WiFi), Arduino (I2C,...) and a Python I2C reader demonstrate typical integration patterns.
+
+
 
 The repository contains:
 - `server.py` — the Flask app and routes
@@ -38,24 +41,26 @@ The repository contains:
 - `src/py/read_i2c.py` — example I2C reader that posts readings
 - `firewall.py` — UFW helper to restrict access to the LAN
 - `server.db` (created automatically on first run)
+- TBD
 
 ---
 
 ## Features
-- Lightweight Flask REST API
-- Minimal web UI for quick inspection of readings
-- Endpoints for listing and adding sensor readings (JSON)
-- Authentication via API key (header `X-API-Key`) or HTTP Basic Auth
-- SQLite persistence with automatic table creation
-- UFW helper script to restrict access to the Pi
+- RESTful JSON API for inserting and retrieving sensor readings  
+- Minimal HTML UI for quick inspection and simple admin tasks  
+- Authentication: API key (`X-API-Key`) and HTTP Basic Auth  
+- SQLite persistence with automatic table creation and suggested WAL mode  
+- Example clients: ESP32 (Wi-Fi), Arduino (I2C/serial patterns), Python I2C script  
+- UFW helper script for simple LAN-only firewall rules
+
 
 ---
 
 ## Requirements
 - Raspberry Pi (or any Linux machine)
 - Python 3.8+
-- `pip3`
-- I2C enabled on the Pi if using I2C reader
+- `pip3`; optional: gunicorn, nginx for production 
+- I2C enabled if using the Python I2C reader
 
 Install Python deps:
 
@@ -81,6 +86,11 @@ pip3 install -r requirements.txt
 ```
 
 3. Create a `.env` file in the `api/` directory (example below).
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
 
 4. Run in development mode:
 
@@ -128,10 +138,11 @@ For production, run the Flask app behind a production WSGI server such as `gunic
 
 ```bash
 pip3 install gunicorn
-gunicorn -w 4 -b 0.0.0.0:5000 server:app
+gunicorn -w 2 -b 0.0.0.0:5000 server:app
 ```
-
 Also ensure the Pi firewall (see `firewall.py`) is configured and that you use strong credentials.
+- NOTE: There are many options to run this in production mode or as an autostart server on Raspberry Pi. This is just a very simple example.
+
 
 ---
 
@@ -168,7 +179,10 @@ Always prefer HTTPS and strong secrets in production. If you expose the API to t
 ### POST `/sensors/add` example (JSON):
 
 ```bash
-curl -X POST http://<RPI-IP>:5000/sensors/add   -H "Content-Type: application/json"   -H "X-API-Key: $API_KEY"   -d '{"sensor_type":"temperature","value":23.5}'
+curl -X POST "http://<RPI-IP>:5000/sensors/add" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
+  -d '{"sensor_type":"temperature","value":23.5}'
 ```
 
 **Response** (JSON, example):
@@ -178,6 +192,71 @@ curl -X POST http://<RPI-IP>:5000/sensors/add   -H "Content-Type: application/js
 ```
 
 Errors are returned as JSON with an appropriate HTTP status code.
+
+---
+## Client sketches (`src/c`)
+
+### Short description
+This folder contains the microcontroller and Pi-side client examples that integrate with the Raspberry Pi REST API backend. The server is the primary component; the sketches and scripts in `src/c/` are **examples** that demonstrate typical integration patterns (ESP32 HTTP POST clients, low-power sketches, an Arduino I2C LCD informer and a Pi-side I2C writer).
+
+> Important: these are examples — adapt pin assignments, power-management and timing to your hardware and deployment. Do **not** commit filled-in secret files.
+
+---
+
+### Contents (actual files in this repo)
+- `src/c/room_monitor/`  
+  - `room_monitor.ino` — ESP32 sketch (DHT11) that reads temperature & humidity and POSTs form-encoded data to `POST /sensors/add`. Uses `WiFi.h`, `HTTPClient.h`, `DHT.h` / `DHT_U.h`.
+  - `secrets.h.example` — template for Wi-Fi, server URL and API key.
+
+- `src/c/bathroom_main_monitor/`  
+  - `bathroom_main_monitor.ino` — occupancy/door monitor sketch (PIR / door sensor) that reports bathroom status to the server.
+  - `secrets.h.example`
+
+- `src/c/apartment_traffic_detection/`  
+  - `apartment_traffic_detection.ino` — motion + door event detector that determines traffic (enter/exit) and reports to the server.
+  - `SR501_PIR_Motion_Sensor_datasheet.pdf` — sensor reference.
+  - `secrets.h.example`
+
+- `src/c/iot_informer/`  
+  - `iot_informer.ino` — Arduino / ESP32 firmware acting as an I2C **slave** that displays bathroom occupancy on a 16×2 LCD (custom chars in `msa_lcd.h`). I2C address used in repo: `0x08`. This sketch does **not** use Wi-Fi (it expects the Pi to be the networked master).
+  - `msa_lcd.h` — LCD helpers / characters.
+  - `rpi_server_iot_informer.py` — Raspberry Pi script that polls the REST API for the latest `bathroom_main` value and writes it to an I2C slave (the informer). Requires `smbus2` and `requests`.
+
+- `src/c/low_power_apps/` (examples focused on battery/low-power operation)  
+  - `apartment_traffic_detection_lowP/*` — low-power variant of the traffic detector.
+  - `bathroom_main_monitor_lowP/*` — low-power bathroom monitor that briefly connects to Wi-Fi and reports state.
+  - `room_monitor_low_power/*` — low-power room monitor example.
+  - Each low-power sketch includes a `secrets.h.example`.
+
+---
+
+### How the clients talk to the server
+- The ESP32 sketches (e.g. `room_monitor.ino`) **POST** form-encoded data to the server using the same endpoint the README documents:
+
+  - Endpoint: `POST /sensors/add`  
+  - Headers: `X-API-Key: <API_KEY>`  
+  - Example form body sent by sketches:
+    ```
+    sensor_type=temperature&value=23.50
+    ```
+
+  - The ESP32 code uses `HTTPClient` and sets `Content-Type: application/x-www-form-urlencoded`.
+
+- The I2C informer pattern:
+  - `iot_informer.ino` runs on a microcontroller as I2C slave (address `0x08`) and displays occupancy.
+  - `rpi_server_iot_informer.py` (Pi-side) polls the REST API (example query: `/sensors/get?sensor_type=bathroom_main&limit=1`) and writes the latest status to the I2C device.
+  - `rpi_server_iot_informer.py` requires `smbus2` (I2C access) and `requests` (HTTP) and should be run on the Pi with I2C enabled.
+
+---
+
+### Quick usage notes & commands
+
+1. **Secrets** — copy and edit per-sketch secrets:
+   ```bash
+   # from within each sketch folder, once copied:
+   cp secrets.h.example secrets.h
+   # Fill: WIFI_SSID, WIFI_PASSWORD, SERVER_URL (e.g. "http://192.168.1.10:5000/sensors/add"), API_KEY
+
 
 ---
 
@@ -202,8 +281,6 @@ You can modify the script to read from other I2C sensors or to post additional m
 # i2c_script = os.path.join(os.path.dirname(__file__), "../src/py/read_i2c.py")
 # subprocess.Popen(["python3", i2c_script])
 ```
-
-
 
 
 ---
