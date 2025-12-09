@@ -94,4 +94,44 @@ def add():
         conn.close()
 
     return jsonify({"status": "ok"})
+
 #-----------------------------------------------------------------------------#
+
+@sensors_bp.route('/sensors/get', methods=['GET'])
+# @require_api_key()                            # Optional: Secure write access
+def get():
+    """
+    Return the last N values of a specific sensor as JSON.
+
+    Query Parameters:
+        sensor_type (str) : required, the sensor to query
+        limit       (int) : optional, number of latest entries (default 10)
+
+    Returns:
+        JSON array of sensor readings in the form:
+        [
+            {"sensor_type": "bathroom_main", "value": 1.0, "timestamp": "..."},
+            ...
+        ]
+    """
+    sensor_type = request.args.get('sensor_type')
+    limit = request.args.get('limit', 10, type=int)  # default 10 entries
+
+    if not sensor_type:
+        return jsonify({"error": "sensor_type parameter is required"}), 400
+
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(
+        'SELECT sensor_type, value, timestamp FROM sensor_data '
+        'WHERE sensor_type = ? ORDER BY id DESC LIMIT ?',
+        (sensor_type, limit)
+    )
+    rows = c.fetchall()
+    conn.close()
+
+    # Convert each row into a dict
+    result = [{"sensor_type": r[0], "value": r[1], "timestamp": r[2]} for r in rows]
+
+    return jsonify(result)
+#-----------------------------------------------------------------------------#    
