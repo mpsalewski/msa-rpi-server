@@ -131,6 +131,7 @@ void loop() {
 
     /* check if new data available*/
     if (stringComplete) {
+        Serial.println("Received: " + inputString); 
         processData(inputString);
         inputString = "";
         stringComplete = false;
@@ -237,7 +238,7 @@ void requestEvent(void) {
  * @note Adds API key in headers for authentication.
 ***/
 void receiveEvent(int howMany){
-    
+    //inputString = "";   
     while (Wire.available()) {
     
         char c = Wire.read();
