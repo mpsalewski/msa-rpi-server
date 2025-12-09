@@ -39,7 +39,7 @@ import sys
 import os
 
 # Allow relative import of config.py from /api
-sys.path.append(os.path.join(os.path.dirname(__file__), "../../api"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "../../../api"))
 import config
 #-----------------------------------------------------------------------------#
 
@@ -83,18 +83,20 @@ def read_i2c_string_block(addr):
 # I2C Write Logic
 
 def send_i2c_status(sensor_type, value):
-    """
-    Sends sensor value to Arduino via I2C.
-    Format: "sensor_type,value#"
-    """
-    message = f"{sensor_type},{value}#"
-    data_bytes = [ord(c) for c in message]
-    
-    try:
-        bus.write_i2c_block_data(I2C_ADDRESS, 0, data_bytes)
-        print(f"Sent to I2C -> {message}")
-    except Exception as e:
-        print(f"Error sending I2C data: {e}")
+	"""
+	Sends sensor value to Arduino via I2C.
+	Format: "sensor_type,value#"
+	"""
+	message = f"{sensor_type},{value}#"
+	#data_bytes = [ord(c) for c in message]
+
+	try:
+		for c in message:
+			bus.write_byte(I2C_ADDRESS, ord(c))
+		#bus.write_i2c_block_data(I2C_ADDRESS, 0, data_bytes)
+		print(f"Sent to I2C -> {message}")
+	except Exception as e:
+		print(f"Error sending I2C data: {e}")
 #-----------------------------------------------------------------------------#
 
 
