@@ -341,12 +341,19 @@ function updateChart(data) {
 }
 
 
+// remember last sensor values if not sent anymore
+let lastTraffic = null;
 function updateTraffic(data) {
-    const trafficData = data.filter(d => d[0].toLowerCase() === "apartment_traffic");
 
-    if (!trafficData.length) return;
+    let trafficData = data.find(d => d[0].toLowerCase() === "apartment_traffic");
 
-    let [type, value, ts] = trafficData[0];  // nur letzte
+    // update memory only if a new measurement is present
+    if (trafficData) lastTraffic = trafficData;
+
+    // if still nothing available -> stop
+    if (!lastTraffic) return;
+
+    const [type, value, ts] = lastTraffic;  // nur letzte
 
     let iconBox = document.getElementById("trafficIcon");
     let status = document.getElementById("trafficStatus");
@@ -366,13 +373,18 @@ function updateTraffic(data) {
 }
 
 // ------------------ UPDATE BATHROOM STATUS ------------------
+let lastBathroom = null;
 // This function updates the "Second Box" to show bathroom_main occupancy
 function updateBathroom(data) {
     // Filter the data for bathroom_main
-    const bathroomData = data.find(d => d[0].toLowerCase() === "bathroom_main");
-    if (!bathroomData) return;
+    let bathroomData = data.find(d => d[0].toLowerCase() === "bathroom_main");
 
-    const [type, value, ts] = bathroomData;
+    // update memory only if new value exists
+    if (bathroomData) lastBathroom = bathroomData;
+
+    if (!lastBathroom) return;
+
+    const [type, value, ts] = lastBathroom;
 
     // Get references to elements
     const iconBox = document.getElementById("secondBox").querySelector("#secondBoxIcon");
