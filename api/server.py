@@ -97,6 +97,10 @@ app.register_blueprint(sensors_bp)
 # Optionally start external I2C data-reading script
 #i2c_script = os.path.join(os.path.dirname(__file__), "../src/py/read_i2c.py")
 #subprocess.Popen(["python3", i2c_script])
+
+# autostart i2c connection to arduino
+rpi_server_iot_informer = os.path.join(os.path.dirname(__file__), "../src/c/iot_informer/rpi_server_iot_informer.py")
+subprocess.Popen(["python3", rpi_server_iot_informer])
 #-----------------------------------------------------------------------------#
 
 
